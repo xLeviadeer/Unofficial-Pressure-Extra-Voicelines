@@ -1,6 +1,8 @@
 --------------- USER AGREEMENT ---------------
 IMPORTANT: by using this software you agree to ALL terms described in this document. If you do not agree to any of the terms and cannot abide by what is stated in this document, do not use this software. 
 
+This project is not endorsed by Pressure or Urbanshade Hadal division. It is soley developed by xLeviadeer, an external party. 
+
 1. Acceptance of Responsibility
     You acknowledge and agree that any consequences are your responsibility. 
     
