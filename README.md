@@ -1,6 +1,8 @@
 # Pressure Extra Voicelines
 Adds extra voicelines to [Roblox Pressure](https://www.roblox.com/games/12411473842/Pressure) when certain events occur.
 
+This project is not endorsed by Pressure or Urbanshade Hadal division. It is soley developed by xLeviadeer, an external party. 
+
 How to Use and How it Works
 ---
 ### How to Use
