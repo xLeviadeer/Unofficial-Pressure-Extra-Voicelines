@@ -49,11 +49,11 @@ Voicelines can occur during all of the following scenarios
 * the crystal being grabbed
 
 ### Characters
-The addon has several "characters" with different voices that talk to you over the course of gameplay. Some characters are generated using [TTSmaker, a free to use (commercially) text-to-speech AI audio generator](https://ttsmaker.com/).
-* Dundre (generated with TTSmaker)
-* Lily (generated with TTSmaker)
-* Robert (generated with TTSmaker)
-* Trevor (generated with TTSmaker)
+The addon has several "characters" with different voices that talk to you over the course of gameplay. 
+* Dundre 
+* Lily 
+* Robert 
+* Trevor 
 * Mayer (voiced by acquaintence with written permission to use)
 * Green Friend (voiced by me, Leviah)
 * system messages, including anything that is not voiced by a character (voiced by me, Leviah)
