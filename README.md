@@ -1,4 +1,4 @@
-# Pressure Extra Voicelines
+# Unofficial Pressure Extra Voicelines
 Adds extra voicelines to [Roblox Pressure](https://www.roblox.com/games/12411473842/Pressure) when certain events occur.
 
 This project is not endorsed by Pressure or Urbanshade Hadal division. It is soley developed by xLeviadeer, an external party. 
@@ -57,3 +57,8 @@ The addon has several "characters" with different voices that talk to you over t
 * Mayer (voiced by acquaintence with written permission to use)
 * Green Friend (voiced by me, Leviah)
 * system messages, including anything that is not voiced by a character (voiced by me, Leviah)
+
+### Supporting this Project
+Supporting this project helps to cover development costs including the programming and voice acting expenses. If you'd like to support the project, voluntary donations help offset these expenses. Every contribution is greatly appreciated, but never expected. Thank you for helping make this project possible!
+
+You can support this project [here](https://www.paypal.com/donate/?business=ZHLZM6XAGPKMS&no_recurring=0&item_name=Supporting+me+helps+to+enable+me+to+continue+development+and+making+improvements+to+my+projects.+Any+support+is+appreciated.+&currency_code=USD).
