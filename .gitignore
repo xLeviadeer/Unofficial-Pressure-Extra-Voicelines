@@ -1,0 +1,9 @@
+# no pycache
+**/__pycache__/
+
+# no data except signatures
+data/*
+!data/signatures
+
+# no logs
+logs/
