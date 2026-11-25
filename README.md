@@ -1,41 +1,38 @@
 # Unofficial Pressure Extra Voicelines
-Adds extra voicelines to [Roblox Pressure](https://www.roblox.com/games/12411473842/Pressure) when certain events occur.
+*Unofficial Pressure Extra Voicelines* is a companion app that adds unofficial extra voicelines to [Roblox Pressure](https://www.roblox.com/games/12411473842/Pressure) when certain events occur.
 
-This project is not endorsed by Pressure or Urbanshade Hadal division. It is soley developed by xLeviadeer, an external party. 
+This project is not endorsed by [Pressure](https://www.roblox.com/games/12411473842/Pressure) or [Urbanshade Hadal](https://www.roblox.com/communities/9683893/Urbanshade-Hadal-Division#!/about) division. It is soley developed by [xLeviadeer](https://github.com/xLeviadeer), an external party. 
 
-How to Use and How it Works
----
-### How to Use
-1. **Download** the program from the "Releases" page and run the .exe file to install the program
-2. **Open** the program
-3. **Enable** any **modes** you'd like 
-4. **Open Pressure** and start playing
+How do I Use it?
+--- 
+1. **Download** the program from the [releases](../../releases) page and run the `.exe` file to open the program
+2. **Enable** any **modes** you'd like 
+3. **Open Pressure** and start playing
     * you should here a message about the lobby test being successful when you open the game. If not, try using the manual wipe function and then re-opening Pressure
 
-### How it Works
-This program uses **system audio**, so be sure to have your audio unmuted. If muted, the program may be unable to properly run events when certain things occur and hence not work. 
-
-When the program detects that an audio is playing which corresponds to a given occurance it will play a corresponding voiceline
-
-This program cannot be used to cheat as the voicelines only play during occurances which the player will have implicitly already identified by the time the voiceline plays. Do not use the method for how this program works to create a derivative work which allows for cheating, hacking, or an unfair advantage.
-
-This **program does NOT interface with the Roblox Client**, modify it in any way, or make requests to the roblox server. It works completely offline (besides that you need to be in the game Pressure which requires a connection). This should make you ban risk extremely low, however, if you have action taken on your account in any way as a result of using this program you agree that you are fully responsible and that this program and I, Leviah, do not take any responsibility.
-
-**Do NOT restart the program during gameplay**; once inside of the game. Doing so may render certain events as no longer detectable and hence voicelines may fail. This is what manual wipe is intended for, however, manual wipe doesn't always work. Additionally, modes will no longer work as intended if the program is restarted during gameplay.
-
-Voiceline Information
+How does it work? Is it dangerous?
 ---
-### Modes
-Modes are optional voiceline features you can enable or disable at any time during gameplay as long as the program has been open since joining the game.
+This program works by checking for the existence of files in the Roblox's data. ¡**It does not interact—whatsoever—with the roblox executable/client**¡ and ¡**it does not modify any Roblox data**¡. ¡**The program does not send any network requests or connect to the internet**¡. The program simply reads data that Roblox writes. Then uses the data and combines it with surrounding data to infer what is happening within the game. This is the mechanism that is used to trigger voicelines. 
 
-#### Rickety Splickety Mode
-Rickety splickety mode allows the fan-made angler "Rabba-Rabba" to attempt to scare you during gameplay. Rabba-Rabba sounds very similar to how Anglers in the base game sound, but due to Roblox's exploitation limits, Rabba-Rabba cannot actually kill you in-game.
+Because this source of data is flakey, expect the program to sometimes malfunction. The program needs to track complex inferred states like whether the player is currently within a match. But it can only determine that by using indirect contextual information. This method is used to ensure the saftey of this program, but creates a compromise to accuracy.
 
-#### Green Friend Mode
-Green friend mode adds voicelines for "Green Friend" which play at a random interval during gameplay. 
+This program—fundamentally—cannot effect your gameplay directly, because it has no connection to Roblox itself. It is a cosmetic companion app designed for entertainment. 
 
-### When voicelines can occur
+Supporting this Project
+
+What is added?
+---
+### Sound Modes
+Modes are optional voiceline features you can enable or disable at any time during gameplay as long as the program has been open since joining the game ¡before entering a match¡.
+* **Rickety Splickety Mode**
+    * Rickety splickety mode allows the fan-made angler "Rabba-Rabba" to attempt to scare you during gameplay. Rabba-Rabba sounds very similar to how Anglers in the base game sound. Rabba-Rabba cannot kill you.
+* **Green Friend Mode**
+    * Green friend mode adds voicelines for "Green Friend" which play at a random intervals during gameplay. 
+
+### Custom Voicelines
 Voicelines can occur during all of the following scenarios
+* angler appearing
+* pinkie appearing
 * joining the Pressure lobby
 * starting a game in Pressure normal mode
 * eyefestation appearing or being enraged
@@ -48,17 +45,21 @@ Voicelines can occur during all of the following scenarios
     * the dredge
 * the crystal being grabbed
 
-### Characters
-The addon has several "characters" with different voices that talk to you over the course of gameplay. 
-* Dundre 
-* Lily 
-* Robert 
-* Trevor 
-* Mayer (voiced by acquaintence with written permission to use)
-* Green Friend (voiced by me, Leviah)
-* system messages, including anything that is not voiced by a character (voiced by me, Leviah)
+Characters & Credits
+---
+The addon has several "characters" with different voices that talk to you over the course of gameplay.
+* **Nessa**: voiced by [Charybdis](https://www.castingcall.club/m/charybdis19)
+* **Luc**: voiced by [Joshua McDonagh](https://www.castingcall.club/m/joshua-mcdonagh)
+* **Ezra**: voiced by [Kamilla Brunet](https://www.castingcall.club/m/lllprincess)
+* **Dundre**: voiced by [Zigmas](https://www.castingcall.club/m/burn-the-night)
+* **Green Imaginary Friend**: voiced by [xLeviadeer](https://github.com/xLeviadeer)
+* **Mayer**: voiced by anonymous
 
-### Supporting this Project
+System messages are voiced by Charybdis and Joshua McDonagh.
+
+Voicelines for individuals who were commissioned are not included in the public repository. This is done to protect their voices from being used in AI training. Download and run the program from the [releases](../../releases) page to experience their voicelines.
+
+--- 
 Supporting this project helps to cover development costs including the programming and voice acting expenses. If you'd like to support the project, voluntary donations help offset these expenses. Every contribution is greatly appreciated, but never expected. Thank you for helping make this project possible!
 
 You can support this project [here](https://www.paypal.com/donate/?business=ZHLZM6XAGPKMS&no_recurring=0&item_name=Supporting+me+helps+to+enable+me+to+continue+development+and+making+improvements+to+my+projects.+Any+support+is+appreciated.+&currency_code=USD).
