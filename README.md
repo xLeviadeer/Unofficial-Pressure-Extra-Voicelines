@@ -8,7 +8,7 @@ How do I Use it?
 1. **Download** the program from the [releases](../../releases) page and run the `.exe` file to open the program
 2. **Enable** any **modes** you'd like 
 3. **Open Pressure** and start playing
-    * you should hear a message about the lobby test being successful when you open the game. If not, try using the manual wipe function and then re-opening Pressure
+    * you should hear a message about the lobby test being successful when you open the game. If not, try using the “manual wipe” button and then re-open Pressure
 
 How does it work? Is it dangerous?
 ---
