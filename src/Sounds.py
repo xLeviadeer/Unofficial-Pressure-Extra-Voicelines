@@ -167,7 +167,7 @@ def get_enabled_voices() -> Iterator[tuple[VoiceOptions, Voice]]:
     """get a iterator of enabled voices only"""
     return ((voice_opt, voice) for voice_opt, voice in voices.items() if voice.is_enabled)
 
-def _get_random_voice(with_category: CategoryOptions) -> VoiceOptions:
+def _get_random_voice(with_category: CategoryOptions) -> VoiceOptions|df.Type.Invalid:
     """gets a random voice
 
     Args:
@@ -196,8 +196,7 @@ def _get_random_voice(with_category: CategoryOptions) -> VoiceOptions:
                     voices_left.remove(option) # remove from options
                     break # will continue outer
                 return option # return the option
-            
-    raise RuntimeError(f"no voice contains a sound for ⸉{with_category.name}⸉")
+    raise df.Value.Invalid # returns when no enabled voice has a sound or when no voices are enabled
 
 def stop_sound(sound: SoundKey) -> None:
     """stop a sound"""
@@ -241,7 +240,8 @@ def play_sound(
     playing_sound: pg.mixer.Sound
     if isinstance(sound, CategoryOptions):
         # get voice & check if voice exists for the sound
-        if df.Check.is_alls(use_voice): use_voice = _get_random_voice(sound)
+        if df.Check.is_alls(use_voice): use_voice: VoiceOptions|df.Type.Invalid = _get_random_voice(sound)
+        if df.Check.is_invalid(use_voice): return # no sound found, do nothing
     
         # pick a random sound
         curr_sound_count = len(voices[use_voice].categories[sound])
