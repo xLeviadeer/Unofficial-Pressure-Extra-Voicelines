@@ -22,8 +22,8 @@ from Core import (
     init as init_core,
     LogChannel
 )
+from ModeManager import init as init_modes
 import SoundInterface
-from SoundInterface import init as init_sound_interface
 
 try: import Copier
 except: import Mock_Copier as Copier
@@ -59,7 +59,7 @@ def launch(mode: Mode) -> None:
     # initialize
     init_core()
     init_sounds()
-    init_sound_interface()
+    init_modes()
     
     # switch over possible modes
     match mode:
@@ -69,7 +69,7 @@ def launch(mode: Mode) -> None:
             thread.start()
 
             # show audio slider (blocks thread)
-            SoundInterface.handler.show_window()
+            SoundInterface.launch()
 
             # stop 
             thread.join()

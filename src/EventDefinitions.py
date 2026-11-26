@@ -15,6 +15,7 @@ import Sounds
 from Sounds import (
     SoundOptions, VoiceOptions, CategoryOptions
 )
+import ModeManager
 
 # deletion time class
 class DeletionTime:
@@ -193,7 +194,7 @@ def event_specifics(eventOption: EventOptions) -> bool:
     match (eventOption):
         # game state handling
         case EventOptions.OnboardingMusic: 
-            SoundInterface.currently_in_game = True
+            ModeManager.currently_in_game = True
             recently_began = True # game start signal for 20 seconds
             thread_game_start = threading.Timer(20, reset_game_recently_started)
             thread_game_start.daemon = True
@@ -212,14 +213,12 @@ def event_specifics(eventOption: EventOptions) -> bool:
             thread_death.start()
             return False
         case EventOptions.Lobby1 | EventOptions.Lobby2:
-            SoundInterface.currently_in_game = False
-            SoundInterface.handler.gif_button.config(state="active")
+            ModeManager.currently_in_game = False
             recently_began = True # flag recently began (will be set again during game start)
             Sounds.delete_temp_sounds() # wipe everything when entering lobby
             LoggerRegistry.log_at(LogChannel.Log, "game is now stopped: lobby music")
         case EventOptions.RidgeEndingSpeech: # (stops normal execution)
-            SoundInterface.currently_in_game = False
-            SoundInterface.handler.gif_button.config(state="active")
+            ModeManager.currently_in_game = False
             LoggerRegistry.log_at(LogChannel.Log, "game is now stopped: ridge ending speech")
             return False # do not attempt to play a sound for this (it's none so it would crash)
             
@@ -299,7 +298,6 @@ def event_specifics(eventOption: EventOptions) -> bool:
                 # if GIF is enabled 
                 if (Sounds.voices[VoiceOptions.GIF].is_enabled):
                     Sounds.play_sound(VoiceOptions.GIF, CategoryOptions.Enragement3)
-                    SoundInterface.handler.gif_button.config(state="disabled")
                     LoggerRegistry.log_at(LogChannel.Log, f"set the new value for {VoiceOptions.GIF.name} to {False}")
                     Sounds.voices[VoiceOptions.GIF].is_enabled = False
                     return False # early return

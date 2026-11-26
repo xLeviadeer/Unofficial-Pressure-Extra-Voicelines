@@ -1,10 +1,24 @@
-from typing import Callable, Self
-import threading
-import time
-import pygame as pg
-import tkinter as tk
+from typing import Self
 from sys import exit
-import random
+from abc import abstractmethod
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QLabel,
+    QSlider, QCheckBox,
+    QGridLayout,
+    QVBoxLayout, QHBoxLayout
+)
+from PySide6.QtGui import (
+    QIcon
+)
+from xLPyBasics import Sentinels as df
+from xLPyBasics.PathAPI import (
+    Path
+)
+from xLPyBasics.ConsoleAPI import LoggerRegistry
 
 import Core as Core
 from Core import (
@@ -12,328 +26,226 @@ from Core import (
 )
 import Sounds
 from Sounds import (
-    ROBLOX_TEMP_SOUNDS_DIR,
-    SoundOptions, VoiceOptions, CategoryOptions
+    VoiceOptions
+)
+from ModeManager import (
+    ModeOptions
 )
 
-from xLPyBasics import Sentinels as df
-from xLPyBasics.Singletons import Singleton
-from xLPyBasics.PathAPI import (
-    Path,
-    PathHandler
-)
-from xLPyBasics.ConsoleAPI import LoggerRegistry
-
-POPUP_WINDOW_WIDTH = 400 # pixels
-BACKGROUND_COLOR = "#d9d9d9" # rgb
-MAIN_MARGINS = 5 # pixels 
 ICON_PATH = Path("assets", "icon.ico", prepension=Path.get_meipass(Path.cwd()))
 
-class SoundInterface(Singleton):
-    def __init__(self: Self) -> None:
-        self.root_window: tk.Tk = None
+class VolumeSlider(QWidget):
+    def __init__(self: Self, starting_volume: int) -> None:
+        super().__init__()
 
-        # mirror values
-        self.do_rickety_mode: bool = False
-        self.gif_button: tk.Button = None
+        # validate range
+        if not isinstance(starting_volume, int): raise TypeError("`starting_volume` must be an integer")
+        if (
+            (starting_volume < 0)
+            or (starting_volume > 100)
+        ): raise ValueError(f"`starting_volume` cannot be less than 0 or greater than 100: {starting_volume}")
 
-    # show popup
-    def show_popup(self: Self, title: str, body: str, buttonText: str, confirmCommand: Callable) -> None:
-        global POPUP_WINDOW_WIDTH
-        MARGIN_SIZE = 10
+        self.__do_update_vol: bool = True
 
-        # create popup warning
-        popup_warning = tk.Toplevel(self.root_window, background=BACKGROUND_COLOR)
-        popup_warning.title(title)
-        popup_warning.iconbitmap(ICON_PATH.get())
-        popup_warning.resizable(False, False)
-        popup_warning.attributes("-topmost", True)
+        self.__box = QVBoxLayout()
+        self.__label = QLabel()
+        self.__box.addWidget(self.__label)
+        self.__slider = QSlider(Qt.Orientation.Horizontal)
+        self.__slider.setRange(0, 100)
+        self.__slider.valueChanged.connect(lambda vol: self.set_volume(vol, True))
+        self.__slider.setValue(starting_volume) # will run `set_volume`
+        self.__box.addWidget(self.__slider)
+        self.setLayout(self.__box)
 
-        # add label warning text
-        tk.Label(
-            popup_warning,
-            text=body,
-            wraplength=POPUP_WINDOW_WIDTH - (MARGIN_SIZE * 2),
-            justify="left",
-            background=BACKGROUND_COLOR
-        ).pack(pady=MARGIN_SIZE, padx=MARGIN_SIZE)
+    def set_volume(
+        self: Self, 
+        vol: int,
+        do_play_test: bool = False
+    ) -> None:
+        # validate range
+        if not isinstance(vol, int): raise TypeError("`vol` must be an integer")
+        if (
+            (vol < 0)
+            or (vol > 100)
+        ): raise ValueError(f"`vol` cannot be less than 0 or greater than 100: {vol}")
 
-        # confirmation button
-        tk.Button(
-            popup_warning,
-            text=buttonText,
-            command=lambda: confirmCommand(popup_warning)
-        ).pack(pady=MARGIN_SIZE, padx=MARGIN_SIZE, anchor="e")
+        # check if volume setting is enabled
+        if not self.__do_update_vol: return # do nothing
 
-        # popup window settings and sizing
-        popup_warning.update_idletasks()
-        popup_warning.geometry(f"{POPUP_WINDOW_WIDTH}x{popup_warning.winfo_height()}")
-        popup_warning.grab_set() # prevent interaction with other windows
-        self.root_window.wait_window(popup_warning) # make it a popup
+        # set
+        self.__label.setText(f"Volume: {vol}")
+        Sounds.set_volume(vol, do_play_test=do_play_test)
 
-    # show window
-    def show_window(self: Self) -> None:
-        # create root tkinter window
-        self.root_window = tk.Tk()
-        self.root_window.attributes("-topmost", True)
-        self.root_window.title("Pressure Extra Voicelines Audio Level")
-        self.root_window.iconbitmap(ICON_PATH.get())
+        # change slider level
+        if self.__slider.value() != vol: # ⌄ gates from recursively running the set volume method 
+            self.__do_update_vol = False
+            self.__slider.setValue(vol)
+            self.__do_update_vol = True
+
+class Toggle(QWidget):
+    @property
+    def is_toggled(self: Self) -> bool: return self._check_box.isChecked()
+    
+    def __init__(self: Self, label: str, initial_state: bool = False) -> None:
+        super().__init__()
+
+        self.__box = QHBoxLayout()
+        self.__box.setContentsMargins(0, 0, 0, 0)
+        self._check_box = QCheckBox()
+        self._check_box.setChecked(initial_state)
+        self._check_box.toggled.connect(self._on_toggled)
+        self.__box.addWidget(self._check_box, stretch=0)
+        self.__label = QLabel(label)
+        self.__label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.__box.addWidget(self.__label, stretch=1)
+        self.setLayout(self.__box)
+
+    @abstractmethod
+    def _on_toggled(self: Self, state: bool) -> None: ...
+
+class ModeToggle(Toggle):
+    __mode: ModeOptions
+
+    def __init__(
+        self: Self, 
+        mode: ModeOptions
+    ) -> None:
+        super().__init__(mode.value.name, mode.value.is_enabled)
+        self.__mode = mode
+        self.__mode.value.on_changed.subscribe(self.__on_state_changed)
+
+    def __on_state_changed(self: Self, state: bool) -> None:
+        if self.is_toggled != state:
+            print(state)
+            self._check_box.setChecked(state) # will set voice state also
+
+    def _on_toggled(self: Self, state: bool) -> None:
+        if self.__mode.value.is_enabled != state:
+            LoggerRegistry.log_at(LogChannel.SettingChange, f"set mode ⸉{self.__mode.name}⸉ to {state}")
+            self.__mode.value.is_enabled = state
+        if not df.Check.is_empty(self.__mode.value.linked_voice): 
+            if Sounds.voices[self.__mode.value.linked_voice].is_enabled != state:
+                Sounds.voices[self.__mode.value.linked_voice].is_enabled = state
+
+class VoiceToggle(Toggle):
+    __voice: VoiceOptions
+
+    def __init__(self: Self, voice: VoiceOptions) -> None:
+        super().__init__(voice.value.name, Sounds.voices[voice].is_enabled)
+        self.__voice = voice
+
+    def _on_toggled(self: Self, state: bool) -> None:
+        if Sounds.voices[self.__voice].is_enabled != state:
+            LoggerRegistry.log_at(LogChannel.SettingChange, f"set voice ⸉{self.__voice.name}⸉ to {state}")
+            Sounds.voices[self.__voice].is_enabled = state
+
+class ToggleGrid[T: Toggle](QWidget):
+    __cols: int
+    __curr_col: int
+    __curr_row: int 
+
+    def __init__(
+        self: Self,
+        label: str,
+        cols: int
+    ) -> None:
+        super().__init__()
+
+        self.__cols = cols
+        self.__curr_col = 0
+        self.__curr_row = 0
+
+        self.__box = QVBoxLayout()
+        self.__label = QLabel(label)
+        self.__box.addWidget(self.__label)
+        self.__grid = QGridLayout() # needs parent widget since it is being placed inside of another layout
+        for i in range(cols): self.__grid.setColumnStretch(i, 1)
+        self.__box.addLayout(self.__grid) # ⌃ see above comment
+        self.setLayout(self.__box)
+
+    def add_item(self: Self, item: T) -> None:
+        self.__grid.addWidget(item, self.__curr_row, self.__curr_col)
+        self.__curr_col += 1
+        if self.__curr_col >= self.__cols:
+            self.__curr_col = 0
+            self.__curr_row += 1
+
+class ModeTogglesGrid(ToggleGrid[ModeToggle]):
+    def add_mode(self: Self, mode: ModeOptions) -> None:
+        mode_toggle = ModeToggle(mode)
+        self.add_item(mode_toggle)
+
+class VoiceToggleGrid(ToggleGrid[VoiceToggle]): 
+    def add_voice(self: Self, voice: VoiceOptions) -> None:
+        voice_toggle = VoiceToggle(voice)
+        self.add_item(voice_toggle)
+
+class SoundInterface(QWidget):
+    # ———CONSTRUCTOR———
+
+    __singleton_exists: bool = False
+    def __init__(
+        self: Self, 
+        icon: QIcon,
+        width: int,
+        voice_cols: int,
+        mode_cols: int
+    ) -> None:
+        super().__init__()
+
+        # singleton
+        if type(self).__singleton_exists: raise RuntimeError("SoundInterface is a singleton and cannot be instantiated more than once")
+        type(self).__singleton_exists = True
+
+        # self window settings
+        self.setWindowTitle(f"Unofficial Pressure Extra Voicelines v{Core.PROGRAM_VERSION}")
+        self.setWindowIcon(icon)
+        self.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
 
         # main grid
-        outer_grid = tk.Frame(self.root_window, background=BACKGROUND_COLOR)
-        outer_grid.rowconfigure(0, weight=1)
-        outer_grid.rowconfigure(1, minsize=3)
-        outer_grid.rowconfigure(2, weight=1)
-        outer_grid.columnconfigure(0, weight=1)
-        outer_grid.pack(padx=0, pady=0, fill="both", expand=True)
+        self.__grid = QGridLayout()
+        self.__grid.setContentsMargins(5, 5, 5, 5)
+        self.__grid.setRowStretch(0, 0)
+        self.__grid.setRowStretch(1, 0)
+        self.__grid.setRowStretch(2, 0)
+        self.setLayout(self.__grid)
 
-        # splitter color
-        splitter = tk.Frame(outer_grid) # default background
-        splitter.grid(row=1, column=0, sticky="nsew")
+        # sound slider
+        self.__vol_slider = VolumeSlider(Sounds.SOUND_SCALE)
+        self.__grid.addWidget(self.__vol_slider, 0, 0)
 
-        # upper grid
-        upper_grid = tk.Frame(outer_grid, background=BACKGROUND_COLOR)
-        upper_grid.rowconfigure(0, weight=1)
-        upper_grid.rowconfigure(1, minsize=20)
-        upper_grid.columnconfigure(0, weight=1)
-        upper_grid.columnconfigure(1, minsize=100)
-        upper_grid.grid(row=0, column=0, sticky="nsew", pady=(MAIN_MARGINS, 0), padx=MAIN_MARGINS)
+        # modes
+        self.__mode_grid = ModeTogglesGrid("Modes", mode_cols)
+        for mode in iter(ModeOptions): self.__mode_grid.add_mode(mode)
+        self.__grid.addWidget(self.__mode_grid, 1, 0)
 
-        # lower grid
-        lower_grid = tk.Frame(outer_grid, background=BACKGROUND_COLOR)
-        lower_grid.rowconfigure(0, weight=1)
-        lower_grid.columnconfigure(0, weight=1)
-        lower_grid.columnconfigure(1, weight=1)
-        lower_grid.columnconfigure(2, weight=1)
-        lower_grid.grid(row=2, column=0, sticky="nsew", pady=(0, MAIN_MARGINS), padx=MAIN_MARGINS)
+        # voices
+        self.__voice_grid = VoiceToggleGrid("Voices", voice_cols)
+        for voice in iter(VoiceOptions):
+            if voice.value.hidden: continue
+            self.__voice_grid.add_voice(voice)
+        self.__grid.addWidget(self.__voice_grid, 2, 0)
 
-        # add sound slider
-        volume_slider = tk.Scale(
-            upper_grid, 
-            from_=0,
-            to=100,
-            orient="horizontal",
-            label="Volume",
-            command=lambda vol: Sounds.set_volume(vol, True),
-            background=BACKGROUND_COLOR,
-            highlightthickness=0 # gets rid of a weird white border
-        )
-        volume_slider.grid(row=0, rowspan=2, column=0, sticky="nsew", padx=MAIN_MARGINS, pady=MAIN_MARGINS)
-        volume_slider.set(100)
+        # set fixed size after adding everything
+        self.adjustSize() # calculate size
+        self.setFixedHeight(self.sizeHint().height()) # set as fixed
+        self.setFixedWidth(width)
 
-        # manual wipe button
-        def on_click_wipe_button():
-            def on_click_understand(popup_warning: tk.Toplevel):
-                # delete temp sounds
-                Sounds.delete_temp_sounds()
-                LoggerRegistry.log_at(LogChannel.Log, "wiped temp roblox files")
+icon: QIcon
 
-                # close window
-                popup_warning.destroy()
-            self.show_popup(
-                "Warning for manually wiping",
-                "Manually wiping will clear the cache that this program relies on and fix some cache-based errors. However it will ¡not¡ fix ⌄. For these errors, a program restart is required.\n"
-                + "\t• whether the program knows if the player is in the game ╎ the program will not function unless you open it before starting a game\n"
-                + "\t• recover from crashed subsystems such as occurance detection, random voice generation, sound effect playing\n",
-                "I understand",
-                on_click_understand
-            )
-        wipe_button = tk.Button(
-            upper_grid,
-            text="Force Wipe",
-            command=on_click_wipe_button,
-        )
-        wipe_button.grid(row=1, column=1, sticky="nsew", padx=MAIN_MARGINS, pady=MAIN_MARGINS)
+def launch() -> None:
+    global app, icon
 
-        # rickety splickety mode
-        _rickety_mode_enabled = tk.BooleanVar(value=self.do_rickety_mode)
-        def _sync_rickety_mode(*args):
-            self.do_rickety_mode = _rickety_mode_enabled.get()
-            LoggerRegistry.log_at(LogChannel.SettingChange, f"set the new value for rickety splickety mode to {self.do_rickety_mode}")
-        _rickety_mode_enabled.trace_add("write", _sync_rickety_mode)
-        rickety_button = tk.Checkbutton(
-            lower_grid, 
-            text="Rickety Splickety Mode",
-            variable=_rickety_mode_enabled,
-            background=BACKGROUND_COLOR
-        )
-        rickety_button.grid(row=0, column=0, sticky="w")
-
-        # gif mode
-        _gif_mode_enabled = tk.BooleanVar(value=Sounds.voices[VoiceOptions.GIF].is_enabled)
-        def _sync_gif_mode(*args):
-            newValue = _gif_mode_enabled.get()
-            LoggerRegistry.log_at(LogChannel.SettingChange, f"set the new value for {VoiceOptions.GIF.name} to {newValue}")
-            Sounds.voices[VoiceOptions.GIF].is_enabled = newValue
-            if (newValue == True): 
-                Sounds.play_sound(CategoryOptions.Enter, VoiceOptions.GIF)
-        _gif_mode_enabled.trace_add("write", _sync_gif_mode)
-        self.gif_button = tk.Checkbutton(
-            lower_grid, 
-            text="Green Friend Mode",
-            variable=_gif_mode_enabled,
-            background=BACKGROUND_COLOR
-        )
-        self.gif_button.grid(row=0, column=1, sticky="w")
-
-        # shutting down noise
-        def on_close():
-            # channel: pg.mixer.Channel = Sounds.play_sound(SoundOptions.ShuttingDown) # play shutting down sound
-            # while channel.get_busy(): time.sleep(0.5) # wait for sound to finish
-            Core.deinit() # de init
-            self.root_window.destroy() # kill window
-            exit() # exit everything
-        self.root_window.protocol("WM_DELETE_WINDOW", on_close)
-
-        # get ready to show so geometry is correct
-        self.root_window.update_idletasks()
-
-        # sizing
-        height = self.root_window.winfo_height()
-        self.root_window.maxsize(1000, height)
-        self.root_window.minsize(500, height)
-        self.root_window.geometry(f"500x{height}")
-        self.root_window.resizable(True, False)
-
-        # start root window
-        self.root_window.mainloop()
-
-# timing consts
-_DELETE_DETECTION_TIME: int = 30 # 0:30
-_RICKETY_SECONDS_MIN: int = int(7 * 60) # 7:00
-_RICKETY_SECONDS_MAX: int = int(20 * 60) # 20:00
-_RANDOM_TALKING_SECONDS_MIN: int = 90 # 1:30
-_RANDOM_TALKING_SECONDS_MAX: int = 150 # 2:30
-
-# single only handler interface
-handler: SoundInterface|df.Type.Unset = df.Value.Unset
-
-# enabled by enter game
-# disabled by lobby or final boss battle
-currently_in_game: bool = False
-
-_was_inited: bool = False
-def init() -> None:
-    global handler
-    global _was_inited
-
-    # don't init twice
-    if _was_inited: raise RuntimeError("cannot initialize twice")
-    _was_inited = True
+    # app
+    app = QApplication()
+    icon = QIcon(ICON_PATH.get())
+    app.setWindowIcon(icon)
 
     # set handler & init runners
         # runners get ignored if they are disabled but always run
-    handler = SoundInterface()
-    _game_active_loop()
-    _rickety_splickety_mode()
-    _GIF_mode()
-
-def _timer(
-    sleep_time: int|tuple[int, int],
-    on_complete: Callable[[], None]
-) -> Callable[[], None]:
-    """creates a timer function which calls the on_complete method when it completes a cycle
-
-    Args:
-        time (int | tuple[int, int]): a single (definite) time (seconds) that it takes for a cycle to complete ∨ a bound of time (seconds) which will be randomly selected between for a cycle to complete
-        on_complete (Callable[[], None]): the method to invoke upon completion
-
-    Returns:
-        Callable[[], None]: an async method to be invoked (via asyncio)
-    """
-    def timer_func() -> None:
-        nonlocal sleep_time
-
-        # run until thread completion
-        while True:
-            # wait for time
-            curr_time = (
-                random.randint(sleep_time[0], sleep_time[1])
-                if isinstance(sleep_time, tuple)
-                else sleep_time
-            )
-            time.sleep(curr_time)
-
-            # run completion method
-            on_complete()
-    return timer_func
-
-# don't ever run this twice
-def _game_active_loop():
-    def delete_files_check_for_exit() -> None:
-        global handler
-        global currently_in_game
-
-        # if there are no files to delete to start with and the game isn't running, then don't exit
-        dir_conts = PathHandler(ROBLOX_TEMP_SOUNDS_DIR).read_dir()
-        if (
-            (len(dir_conts) == 0)
-            and (currently_in_game == False)
-        ): return
-
-        # for every roblox sound
-        for file in dir_conts:
-            # try to delete it
-            try: file.remove()
-            except (PermissionError, OSError): 
-                # at least one file was in use, try again next cycle
-                LoggerRegistry.log_at(LogChannel.Log, "still in game")
-                break
-        else: # didn't break
-            # game must not be running
-            Sounds.play_sound(SoundOptions.Exit)
-            handler.gif_button.config(state="active")
-            currently_in_game = False
-            LoggerRegistry.log_at(LogChannel.Log, "game is now stopped: exit detected")
-    timer = _timer(_DELETE_DETECTION_TIME, delete_files_check_for_exit)
-    threading.Thread(target=timer, daemon=True).start()
-    LoggerRegistry.log_at(LogChannel.Log, "ran game active thread")
-
-# don't ever run this twice
-def _rickety_splickety_mode() -> None:
-    def play_rabba_sound() -> None:
-        global handler
-        global currently_in_game
-
-        # play sound effect
-        if (
-            (handler.do_rickety_mode) # rickety splickety mode enabled
-            and (currently_in_game) # currently in the game
-        ):
-            Sounds.play_sound(SoundOptions.Rabba)
-            channel = Sounds.playing_sounds[SoundOptions.Rabba]
-            while channel.get_busy(): # wait for sound to finish
-                # stop if unchecked mid playback
-                if (
-                    (not handler.do_rickety_mode)
-                    or (not currently_in_game)
-                ): channel.stop()
-                time.sleep(0.2) # wait some time
-    timer = _timer((_RICKETY_SECONDS_MIN, _RICKETY_SECONDS_MAX), play_rabba_sound)
-    threading.Thread(target=timer, daemon=True).start()
-    LoggerRegistry.log_at(LogChannel.Log, "ran rickety splickety thread")
-
-# don't ever run this twice
-def _GIF_mode() -> None:
-    def talk_something() -> None:
-        global currently_in_game
-
-        # play sound effect
-        if (
-            (Sounds.voices[VoiceOptions.GIF].is_enabled) # rickety splickety mode enabled
-            and (currently_in_game) # currently in the game
-        ):
-            gif_key = Sounds.play_sound(CategoryOptions.Random, VoiceOptions.GIF)
-            channel = Sounds.playing_sounds[gif_key]
-            while channel.get_busy(): # wait for sound to finish
-                # stop if unchecked mid playback
-                if (
-                    (not handler.do_rickety_mode)
-                    or (not currently_in_game)
-                ): channel.stop()
-                time.sleep(0.2) # wait some time
-    timer = _timer((_RANDOM_TALKING_SECONDS_MIN, _RANDOM_TALKING_SECONDS_MAX), talk_something)
-    threading.Thread(target=timer, daemon=True).start()
-    LoggerRegistry.log_at(LogChannel.Log, "ran GIF thread")
-
-# don't ever run this twice
+    handler = SoundInterface(icon, 400, 2, 3)
+    handler.show()
+    exit(app.exec())

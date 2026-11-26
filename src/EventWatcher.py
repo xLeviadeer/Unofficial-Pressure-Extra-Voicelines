@@ -1,12 +1,12 @@
 from typing import Self
 import time
 import threading
-from sys import exit
 import tkinter as tk
 
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 import numpy as np
 import soundfile as sf
+from PySide6.QtWidgets import QApplication, QMessageBox
 from xLPyBasics import Sentinels as df
 from xLPyBasics.PathAPI import (
     Path,
@@ -56,23 +56,19 @@ class EventIdentifier(FileSystemEventHandler):
             Copier.dump_current() # create a dump
             Core.deinit() # close the logger so that all contents are written to it
 
-            # create popup
-            def exitAll(popup_window: tk.Toplevel):
-                popup_window.destroy()
-                exit(0)
-                SoundInterface.handler.root_window.destroy()
-            SoundInterface.handler.show_popup(
-                "An error has occured",
+            # create exit popup
+            QMessageBox.information(
+                None,
+                "An error has occurred",
                 "ERROR: an error has occured and the program is no longer identifying occurances correctly, please take the following actions.\n"
                     + "Check to ensure you are on the most up-to-date version of the program\n"
                     + "1. send the developer the `log.txt` file generated in the `logs` folder.\n"
                         + "\t• you may need to close the program for it to appear ╎ do ¡not¡ start the program or the log file will be cleared"
                     + "2. close and re-open the program\n"
                     + "3. trigger a ⟨Manual Wipe⟩ to clear any sound fragments that may be left.\n"
-                        + "\t• some occurances may no longer be properly detected even after completing the above successfully. Once the game you are playing has been left and re-joined, the program will work fully properly again.",
-                " Okay ",
-                exitAll 
+                        + "\t• some occurances may no longer be properly detected even after completing the above successfully. Once the game you are playing has been left and re-joined, the program will work fully properly again."
             )
+            QApplication.instance().quit()
         
     # runs when an event is found
     @staticmethod

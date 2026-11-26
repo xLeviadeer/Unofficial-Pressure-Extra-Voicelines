@@ -23,6 +23,7 @@ from xLPyBasics.PathAPI import (
 ROBLOX_TEMP_SOUNDS_DIR = Path(tempfile.gettempdir(), "Roblox", "sounds")
 SOUND_EXTENSION: str = ".wav"
 SOUNDS_PATH: Path = Path("assets", "sounds", prepension=Path.get_meipass(Path.cwd()))
+SOUND_SCALE: int = 100
 
 IDENTIFICATION_DEPTH = 300
 IDENTIFIER_DEPTH = 300
@@ -44,11 +45,12 @@ class SoundOptions(Enum):
 class VoiceOption:
     name: str
     weight: int
+    hidden: bool = False
 
 # voice options
 class VoiceOptions(Enum):
-    GIF = VoiceOption("GIF", 6)
     Mayer = VoiceOption("Mayer", 2)
+    GIF = VoiceOption("GIF", 8, True)
 
 VOICES_DISABLED_BY_DEFAULT = [
     VoiceOptions.GIF,
@@ -280,7 +282,7 @@ def set_volume(
 ) -> None:
     """set the volume of all upcoming & playing sounds"""
     global volume_level
-    volume_level = int(volume) / 100 # change volume for new sounds
+    volume_level = int(volume) / SOUND_SCALE # change volume for new sounds
     for _, sound in playing_sounds.items(): sound.set_volume(volume_level) # change volume of playing sounds
 
     # only if other sounds aren't playing and test is enabled, play a test sound
