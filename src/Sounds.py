@@ -53,6 +53,7 @@ class VoiceOptions(Enum):
     GIF = VoiceOption("GIF", 8, True)
 
 VOICES_DISABLED_BY_DEFAULT = [
+    VoiceOptions.Mayer,
     VoiceOptions.GIF,
 ]
 

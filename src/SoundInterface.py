@@ -209,6 +209,7 @@ class SoundInterface(QWidget):
         tooltips: dict[VoiceOptions|ModeOptions, str] = {
             ModeOptions.GIF: "voiced by xLeviadeer",
         }
+
         # self window settings
         self.setWindowTitle(f"Unofficial Pressure Extra Voicelines v{Core.PROGRAM_VERSION}")
         self.setWindowIcon(icon)
