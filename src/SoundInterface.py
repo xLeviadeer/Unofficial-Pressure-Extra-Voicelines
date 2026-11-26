@@ -37,14 +37,6 @@ class SoundInterface(Singleton):
         self.do_rickety_mode: bool = False
         self.gif_button: tk.Button = None
 
-    # delete all temp sounds
-    def __delete_temp_sounds(self: Self) -> None:
-        # for every roblox sound
-        for file in PathHandler(ROBLOX_TEMP_SOUNDS_DIR).read_dir(do_iter=True):
-            # try to delete it
-            try: file.remove()
-            except (PermissionError, OSError): pass # don't delete this file
-
     # show popup
     def show_popup(self: Self, title: str, body: str, buttonText: str, confirmCommand: Callable) -> None:
         global POPUP_WINDOW_WIDTH
@@ -122,7 +114,7 @@ class SoundInterface(Singleton):
             to=100,
             orient="horizontal",
             label="Volume",
-            command=Sounds.set_volume,
+            command=lambda vol: Sounds.set_volume(vol, True),
             background=BACKGROUND_COLOR,
             highlightthickness=0 # gets rid of a weird white border
         )
@@ -133,7 +125,7 @@ class SoundInterface(Singleton):
         def on_click_wipe_button():
             def on_click_understand(popup_warning: tk.Toplevel):
                 # delete temp sounds
-                self.__delete_temp_sounds()
+                Sounds.delete_temp_sounds()
                 LoggerRegistry.log_at(LogChannel.Log, "wiped temp roblox files")
 
                 # close window
@@ -178,7 +170,7 @@ class SoundInterface(Singleton):
             LoggerRegistry.log_at(LogChannel.SettingChange, f"set the new value for {VoiceOptions.GIF.name} to {newValue}")
             Sounds.voices[VoiceOptions.GIF].is_enabled = newValue
             if (newValue == True): 
-                Sounds.play_sound_categoric(VoiceOptions.GIF, CategoryOptions.Enter)
+                Sounds.play_sound(CategoryOptions.Enter, VoiceOptions.GIF)
         _gif_mode_enabled.trace_add("write", _sync_gif_mode)
         self.gif_button = tk.Checkbutton(
             lower_grid, 
@@ -190,7 +182,7 @@ class SoundInterface(Singleton):
 
         # shutting down noise
         def on_close():
-            # channel: pg.mixer.Channel = Sounds.play_sound_default(SoundOptions.ShuttingDown) # play shutting down sound
+            # channel: pg.mixer.Channel = Sounds.play_sound(SoundOptions.ShuttingDown) # play shutting down sound
             # while channel.get_busy(): time.sleep(0.5) # wait for sound to finish
             Core.deinit() # de init
             self.root_window.destroy() # kill window
@@ -289,10 +281,11 @@ def _game_active_loop():
             try: file.remove()
             except (PermissionError, OSError): 
                 # at least one file was in use, try again next cycle
+                LoggerRegistry.log_at(LogChannel.Log, "still in game")
                 break
         else: # didn't break
             # game must not be running
-            Sounds.play_sound_default(SoundOptions.Exit)
+            Sounds.play_sound(SoundOptions.Exit)
             handler.gif_button.config(state="active")
             currently_in_game = False
             LoggerRegistry.log_at(LogChannel.Log, "game is now stopped: exit detected")
@@ -311,8 +304,9 @@ def _rickety_splickety_mode() -> None:
             (handler.do_rickety_mode) # rickety splickety mode enabled
             and (currently_in_game) # currently in the game
         ):
-            rabba_sound = Sounds.play_sound_default(SoundOptions.Rabba)
-            while rabba_sound.get_busy(): # wait for sound to finish
+            Sounds.play_sound(SoundOptions.Rabba)
+            channel = Sounds.playing_sounds[SoundOptions.Rabba]
+            while channel.get_busy(): # wait for sound to finish
                 # stop if unchecked mid playback
                 if (
                     (not handler.do_rickety_mode)

@@ -1,5 +1,7 @@
 from typing import (
     Self
+    Self,
+    Iterator
 )
 from enum import Enum
 import tempfile
@@ -7,6 +9,8 @@ import random
 from dataclasses import dataclass
 import threading
 import time
+from sys import exit
+import threading
 
 import pygame as pg
 from xLPyBasics import Sentinels as df
@@ -20,6 +24,10 @@ from xLPyBasics.PathAPI import (
 ROBLOX_TEMP_SOUNDS_DIR = Path(tempfile.gettempdir(), "Roblox", "sounds")
 SOUND_EXTENSION: str = ".wav"
 SOUNDS_PATH: Path = Path("assets", "sounds", prepension=Path.get_meipass(Path.cwd()))
+
+IDENTIFICATION_DEPTH = 300
+IDENTIFIER_DEPTH = 300
+IDENTIFIER_TYPE: str = "int32"
 
 # default sounds options
 class SoundOptions(Enum):
@@ -63,6 +71,9 @@ class CategoryOptions(Enum):
     Crystal = "crystal"
     OxygenGardens = "gardens"
     Dredge = "dredge"
+    NaviRoom = "navi"
+    Ghost = "ghost"
+    Death = "death"
     Random = "random"
 
 # voice storage for sounds
@@ -72,11 +83,13 @@ class Voice:
         self.path = SOUNDS_PATH.appended(voice.value.name)
         self.categories: dict[CategoryOptions, list[pg.mixer.Sound]] = {}
 
+type SoundKey = SoundOptions|tuple[VoiceOptions, CategoryOptions]
+
 sounds: dict[SoundOptions, pg.mixer.Sound]|df.Type.Unset = df.Value.Unset
 voices: dict[VoiceOptions, Voice]|df.Type.Unset = df.Value.Unset
 
 volume_level: float = 1
-playing_sounds: list[pg.mixer.Channel] = []
+playing_sounds: dict[SoundKey, pg.mixer.Channel] = {}
 
 do_test_sound = True
 test_sound_locked = 0
@@ -91,6 +104,12 @@ def init() -> None:
     # don't init twice
     if _was_inited: raise RuntimeError("cannot initialize twice")
     _was_inited = True
+
+    # check that roblox directory exists
+    if not PathHandler(ROBLOX_TEMP_SOUNDS_DIR).exists_dir:
+        from tkinter import messagebox
+        messagebox.showerror("No Roblox", "roblox is not installed on this machine or a game has not yet been opened with it ⇒ install roblox and open a game")
+        exit()
 
     # ║ defaults
     sounds = {}
@@ -128,108 +147,140 @@ def init() -> None:
     # ║ disable default voices
     for voice in VOICES_DISABLED_BY_DEFAULT: voices[voice].is_enabled = False
 
-# temp disable test sound playing
-def _temp_disable_test_sound(channel: pg.mixer.Channel):
-    global do_test_sound, test_sound_locked
-    def re_enable_test_sound_playability(subchannel: pg.mixer.Channel) -> None:
-        global do_test_sound, test_sound_locked
-        while subchannel.get_busy(): time.sleep(0.1)
-        if (test_sound_locked <= 1):
-            do_test_sound = True
-        test_sound_locked -= 1
-    do_test_sound = False
-    test_sound_locked += 1
+# delete all temp sounds
+def delete_temp_sounds() -> None:
+    # for every roblox sound
+    for file in PathHandler(ROBLOX_TEMP_SOUNDS_DIR).read_dir(do_iter=True):
+        # try to delete it
+        try: file.remove()
+        except (PermissionError, OSError): pass # don't delete this file
+
+def get_playing_sound(sound: SoundKey) -> pg.mixer.Channel|df.Type.Invalid:
+    global playing_sounds
+    if sound not in playing_sounds: return df.Value.Invalid
+    return playing_sounds[sound]
+
+def get_enabled_voices() -> Iterator[tuple[VoiceOptions, Voice]]:
+    """get a iterator of enabled voices only"""
+    return ((voice_opt, voice) for voice_opt, voice in voices.items() if voice.is_enabled)
+
+def _get_random_voice(with_category: CategoryOptions) -> VoiceOptions:
+    """gets a random voice
+
+    Args:
+        with_category (CategoryOptions): the category this voice must have to be selected
+
+    Returns:
+        VoiceOptions: a random voice with the category
+    """
+    global voices
+
+    # loop until no voices are left, trying to find a random
+    voices_left: list[VoiceOptions] = list(voice[0] for voice in get_enabled_voices()) # get a list of enabled voices
+    while len(voices_left) > 0:
+        # create a list of all voice options (which are enabled) and shuffle it 
+        total_active_weight: int = sum([voice_opt.value.weight for voice_opt in voices_left]) # get weight for voices left
+        random_weighted_value = random.randint(0, (total_active_weight - 1)) # get a random weighted value
+        options: list[VoiceOptions] = voices_left.copy() # copy of voices left used for finding the voice within the right weighted bracket
+        while len(options) > 0:
+            option = options.pop() # remove option at start
+    
+            # substract the weight and check if the value is found
+            random_weighted_value -= option.value.weight
+            if (random_weighted_value <= 0): 
+                # check if option has cat
+                if with_category not in voices[option].categories: 
+                    voices_left.remove(option) # remove from options
+                    break # will continue outer
+                return option # return the option
+            
+    raise RuntimeError(f"no voice contains a sound for ⸉{with_category.name}⸉")
+
+def stop_sound(sound: SoundKey) -> None:
+    """stop a sound"""
+    global playing_sounds
+
+    if sound not in playing_sounds: return # do nothing, not playing
+    playing = playing_sounds[sound]
+    playing.stop()
+    del playing_sounds[sound]
+
+def stop_sounds() -> None:
+    """stops all playing sounds"""
+    global playing_sounds
+    playing_sounds_dup = playing_sounds.copy() # duplicate to avoid mutating the dict being looped
+    for sound in playing_sounds_dup.keys(): stop_sound(sound)
+
+def play_sound(
+    sound: SoundOptions|CategoryOptions, 
+    use_voice: VoiceOptions|df.Type.Alls = df.Value.Alls,
+    do_stop: bool = False
+) -> SoundKey:
+    """plays a sound
+
+    Args:
+        sound (SoundOptions | CategoryOptions): the sound to play
+        do_random (bool | df.Type.Alls, optional): the voice to use ╎ uses a random voice if set to All ╎ has no effect if sound isn't categoric. Defaults to All.
+        do_stop (bool, optional): whether to stop all other playing sounds before playing. Defaults to False.
+
+    Returns:
+        pg.mixer.Channel: _description_
+    """
+    global voices, sounds
+    global playing_sounds, volume_level
+
+    # do stop
+    if do_stop: stop_sounds()
+
+    # check if sound can use a voice
+    playing_key: SoundKey
+    playing_sound: pg.mixer.Sound
+    if isinstance(sound, CategoryOptions):
+        # get voice & check if voice exists for the sound
+        if df.Check.is_alls(use_voice): use_voice = _get_random_voice(sound)
+    
+        # pick a random sound
+        curr_sound_count = len(voices[use_voice].categories[sound])
+        random_index = random.randint(0, (curr_sound_count - 1))
+        random_sound = voices[use_voice].categories[sound][random_index]
+        playing_key = (use_voice, sound)
+        playing_sound = random_sound
+    elif isinstance(sound, SoundOptions): 
+        playing_key = sound
+        playing_sound = sounds[sound]
+    else: 
+        raise TypeError(f"passed `sound` is not of type `SoundOptions` ꭉ `CategoryOptions`: {type(sound)}")
+
+    # index & play
+    stop_sound(playing_key) # stop sound if it's already playing
+    playing_channel = playing_sound.play()
+    playing_channel.set_volume(volume_level)
+    playing_sounds[playing_key] = playing_channel
+
+    # schedule remover
+    def remove_playing(sound: SoundKey) -> None:
+        global playing_sounds
+        channel = get_playing_sound(sound)
+        while channel.get_busy(): time.sleep(0.2)
+        stop_sound(sound)
     threading.Thread(
-        target=re_enable_test_sound_playability,
-        args=(channel,),
+        target=remove_playing,
+        args=(playing_key,),
         daemon=True
     ).start()
+    return playing_key
 
-# play sound default
-def play_sound_default(sound: SoundOptions) -> pg.mixer.Channel:
+def set_volume(
+    volume: int, 
+    do_play_test: bool = False
+) -> None:
+    """set the volume of all upcoming & playing sounds"""
     global volume_level
-    global sounds
+    volume_level = int(volume) / 100 # change volume for new sounds
+    for _, sound in playing_sounds.items(): sound.set_volume(volume_level) # change volume of playing sounds
 
-    # play sound
-    sounds[sound].set_volume(volume_level)
-    channel = sounds[sound].play()
-    _temp_disable_test_sound(channel) # temp disable test sound playing
-    
-    # return channel
-    return channel
-
-# play sound based on voice + category
-    # returns None when the category cannot be found for this voice
-def play_sound_categoric(voice: VoiceOptions, category: CategoryOptions) -> pg.mixer.Channel|None:
-    global voices
-    global volume_level
-
-    # check if the category exists 
-    if (category not in voices[voice].categories.keys()): return None 
-
-    # get category length and check if it has no sounds
-    curr_sound_count = len(voices[voice].categories[category])
-    if (curr_sound_count < 1): return None
-
-    # pick a random sound
-    random_index = random.randint(0, (curr_sound_count - 1))
-    random_sound = voices[voice].categories[category][random_index]
-
-    # play sound
-    random_sound.set_volume(volume_level)
-    channel = random_sound.play()
-    _temp_disable_test_sound(channel) # temp disable test sound playing
-
-    # return channel
-    return channel
-
-# volume set function
-def set_volume(volume: int) -> None:
-    global volume_level, playing_sounds
-    global do_test_sound
-
-    # inital checks & volume
-    if (not do_test_sound): return # if test sound can be played
-    volume_level = int(volume) / 100 # change volume
-
-    # stop/remove all currently playing sounds
-    if (len(playing_sounds) != 0):
-        for sound in playing_sounds:
-            if (sound.get_busy()):
-                sound.stop()
-                playing_sounds.remove(sound)
-            else:
-                playing_sounds.remove(sound)
-
-    # play one test sound
-    current = play_sound_default(SoundOptions.Test)
-    playing_sounds.append(current)
-
-# get the total active voices weight
-def get_total_active_weight() -> int:
-    global voices
-    return sum([voice_opt.value.weight for voice_opt, voice in voices.items() if voice.is_enabled])
-
-# get random voice by active weight
-def _get_random_voice() -> VoiceOptions:
-    global voices
-
-    # create a list of all voice options (which are enabled) and shuffle it 
-    random_weighted_value = random.randint(0, (get_total_active_weight() - 1)) # get a random weighted value
-    options = [voice_opt for voice_opt in VoiceOptions if voices[voice_opt].is_enabled]
-    random.shuffle(options)
-    while len(options) > 0:
-        option = options[0]
-
-        # substract the weight and check if the value is found
-        random_weighted_value -= option.value.weight
-        if (random_weighted_value <= 0): return option # return the option
-        options.pop(0) # remove option at start
-
-# play random category sound
-def play_sound_categoric_random(category: CategoryOptions) -> pg.mixer.Channel:
-    # attempt to play sounds until one with a category is found
-    while True:
-        randomVoice = _get_random_voice() # get a random voice
-        channel: pg.mixer.Channel|None = play_sound_categoric(randomVoice, category) # try to play the sound
-        if channel != None: return channel # if successful (channel returned), return channel (break)
+    # only if other sounds aren't playing and test is enabled, play a test sound
+    if (
+        do_play_test
+        and (len(playing_sounds) == 0)
+    ): play_sound(SoundOptions.Test) 
