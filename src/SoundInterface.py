@@ -26,7 +26,7 @@ from Core import (
 )
 import Sounds
 from Sounds import (
-    VoiceOptions
+    VoiceOptions, CategoryOptions
 )
 from ModeManager import (
     ModeOptions
@@ -126,6 +126,12 @@ class ModeToggle(Toggle):
         if not df.Check.is_empty(self.__mode.value.linked_voice): 
             if Sounds.voices[self.__mode.value.linked_voice].is_enabled != state:
                 Sounds.voices[self.__mode.value.linked_voice].is_enabled = state
+
+        # play sound if linked voice exists & toggled on
+        if (
+            (state == True)
+            and not df.Check.is_empty(self.__mode.value.linked_voice) 
+        ): Sounds.play_sound(CategoryOptions.Enter, self.__mode.value.linked_voice)
 
 class VoiceToggle(Toggle):
     __voice: VoiceOptions
