@@ -1,9 +1,10 @@
-# no pycache
+# no internals
 **/__pycache__/
+.vscode/
 
 # no data except signatures
 data/*
-!data/signatures
+!data/signatures/.gitkeep
 
 # no logs
 logs/
