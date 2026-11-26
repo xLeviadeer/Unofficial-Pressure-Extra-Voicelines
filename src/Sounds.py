@@ -1,5 +1,4 @@
 from typing import (
-    Self
     Self,
     Iterator
 )
@@ -90,6 +89,7 @@ voices: dict[VoiceOptions, Voice]|df.Type.Unset = df.Value.Unset
 
 volume_level: float = 1
 playing_sounds: dict[SoundKey, pg.mixer.Channel] = {}
+playing_sounds_lock = threading.Lock()
 
 do_test_sound = True
 test_sound_locked = 0
@@ -156,9 +156,10 @@ def delete_temp_sounds() -> None:
         except (PermissionError, OSError): pass # don't delete this file
 
 def get_playing_sound(sound: SoundKey) -> pg.mixer.Channel|df.Type.Invalid:
-    global playing_sounds
-    if sound not in playing_sounds: return df.Value.Invalid
-    return playing_sounds[sound]
+    global playing_sounds, playing_sounds_lock
+    with playing_sounds_lock:
+        if sound not in playing_sounds: return df.Value.Invalid
+        return playing_sounds[sound]
 
 def get_enabled_voices() -> Iterator[tuple[VoiceOptions, Voice]]:
     """get a iterator of enabled voices only"""
@@ -198,12 +199,13 @@ def _get_random_voice(with_category: CategoryOptions) -> VoiceOptions:
 
 def stop_sound(sound: SoundKey) -> None:
     """stop a sound"""
-    global playing_sounds
+    global playing_sounds, playing_sounds_lock
 
-    if sound not in playing_sounds: return # do nothing, not playing
-    playing = playing_sounds[sound]
-    playing.stop()
-    del playing_sounds[sound]
+    with playing_sounds_lock:
+        if sound not in playing_sounds: return # do nothing, not playing
+        playing = playing_sounds[sound]
+        playing.stop()
+        del playing_sounds[sound]
 
 def stop_sounds() -> None:
     """stops all playing sounds"""
@@ -224,7 +226,7 @@ def play_sound(
         do_stop (bool, optional): whether to stop all other playing sounds before playing. Defaults to False.
 
     Returns:
-        pg.mixer.Channel: _description_
+        SoundKey: the sound key of the sound played
     """
     global voices, sounds
     global playing_sounds, volume_level
@@ -255,12 +257,14 @@ def play_sound(
     stop_sound(playing_key) # stop sound if it's already playing
     playing_channel = playing_sound.play()
     playing_channel.set_volume(volume_level)
-    playing_sounds[playing_key] = playing_channel
+    with playing_sounds_lock:
+        playing_sounds[playing_key] = playing_channel
 
     # schedule remover
     def remove_playing(sound: SoundKey) -> None:
         global playing_sounds
         channel = get_playing_sound(sound)
+        if df.Check.is_invalid(channel): return # already stopped: do nothing
         while channel.get_busy(): time.sleep(0.2)
         stop_sound(sound)
     threading.Thread(
@@ -282,5 +286,11 @@ def set_volume(
     # only if other sounds aren't playing and test is enabled, play a test sound
     if (
         do_play_test
-        and (len(playing_sounds) == 0)
+        and ( # no sounds playing or only test sound playing
+            (len(playing_sounds) == 0)
+            or (
+                (len(playing_sounds) == 1)
+                and (next(iter(playing_sounds), None) == SoundOptions.Test)
+            )
+        )
     ): play_sound(SoundOptions.Test) 
