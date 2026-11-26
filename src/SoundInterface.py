@@ -132,13 +132,9 @@ class SoundInterface(Singleton):
                 popup_warning.destroy()
             self.show_popup(
                 "Warning for manually wiping",
-                "WARNING: Do not manually wipe more than once every minute, as this could flag your account as a cheater to the Roblox anti-cheat system."
-                    + "\n"
-                    + "\nManually wiping WILL 'reset' the data cache this program uses,"
-                    + "\n- detectability of most* detectable occurances"
-                    + "\nhowever, it WILL NOT reset the state of the program, which requires the program to be restarted."
-                    + "\n- if the player is currently in the game (turned off by default, only enabled when entering a new game)"
-                    + "\n- recover from crashed subsystems such as occurance detection, random voice generation, sound effect playing",
+                "Manually wiping will clear the cache that this program relies on and fix some cache-based errors. However it will ¡not¡ fix ⌄. For these errors, a program restart is required.\n"
+                + "\t• whether the program knows if the player is in the game ╎ the program will not function unless you open it before starting a game\n"
+                + "\t• recover from crashed subsystems such as occurance detection, random voice generation, sound effect playing\n",
                 "I understand",
                 on_click_understand
             )
