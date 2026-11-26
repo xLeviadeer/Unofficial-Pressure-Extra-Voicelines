@@ -4,10 +4,10 @@ from abc import abstractmethod
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QApplication,
+    QApplication, QMessageBox,
     QWidget,
     QLabel,
-    QSlider, QCheckBox,
+    QSlider, QCheckBox, QPushButton,
     QGridLayout,
     QVBoxLayout, QHBoxLayout
 )
@@ -177,12 +177,12 @@ class ToggleGrid[T: Toggle](QWidget):
             self.__curr_row += 1
 
 class ModeTogglesGrid(ToggleGrid[ModeToggle]):
-    def add_mode(self: Self, mode: ModeOptions) -> None:
+    def add_mode(self: Self, mode: ModeOptions, tooltip: str|df.Type.Empty = df.Value.Empty) -> None:
         mode_toggle = ModeToggle(mode)
         self.add_item(mode_toggle)
 
 class VoiceToggleGrid(ToggleGrid[VoiceToggle]): 
-    def add_voice(self: Self, voice: VoiceOptions) -> None:
+    def add_voice(self: Self, voice: VoiceOptions, tooltip: str|df.Type.Empty = df.Value.Empty) -> None:
         voice_toggle = VoiceToggle(voice)
         self.add_item(voice_toggle)
 
@@ -203,6 +203,10 @@ class SoundInterface(QWidget):
         if type(self).__singleton_exists: raise RuntimeError("SoundInterface is a singleton and cannot be instantiated more than once")
         type(self).__singleton_exists = True
 
+        # tooltips
+        tooltips: dict[VoiceOptions|ModeOptions, str] = {
+            ModeOptions.GIF: "voiced by xLeviadeer",
+        }
         # self window settings
         self.setWindowTitle(f"Unofficial Pressure Extra Voicelines v{Core.PROGRAM_VERSION}")
         self.setWindowIcon(icon)
@@ -217,28 +221,62 @@ class SoundInterface(QWidget):
         self.__grid.setRowStretch(0, 0)
         self.__grid.setRowStretch(1, 0)
         self.__grid.setRowStretch(2, 0)
+        self.__grid.setRowStretch(3, 0)
         self.setLayout(self.__grid)
+
+        # manual wipe
+        self.__manual_wipe = QPushButton("Manual Wipe")
+        self.__manual_wipe.pressed.connect(self.on_manual_wipe)
+        self.__grid.addWidget(self.__manual_wipe, 0, 0)
 
         # sound slider
         self.__vol_slider = VolumeSlider(Sounds.SOUND_SCALE)
-        self.__grid.addWidget(self.__vol_slider, 0, 0)
+        self.__grid.addWidget(self.__vol_slider, 1, 0)
 
         # modes
         self.__mode_grid = ModeTogglesGrid("Modes", mode_cols)
-        for mode in iter(ModeOptions): self.__mode_grid.add_mode(mode)
-        self.__grid.addWidget(self.__mode_grid, 1, 0)
+        for mode in iter(ModeOptions): 
+            tooltip: str|df.Type.Empty = (
+                tooltips[mode] 
+                if mode in tooltips
+                else df.Value.Empty
+            )
+            self.__mode_grid.add_mode(mode, tooltip)
+        self.__grid.addWidget(self.__mode_grid, 2, 0)
 
         # voices
         self.__voice_grid = VoiceToggleGrid("Voices", voice_cols)
         for voice in iter(VoiceOptions):
             if voice.value.hidden: continue
-            self.__voice_grid.add_voice(voice)
-        self.__grid.addWidget(self.__voice_grid, 2, 0)
+            tooltip: str|df.Type.Empty = (
+                tooltips[voice] 
+                if voice in tooltips
+                else df.Value.Empty
+            )
+            self.__voice_grid.add_voice(voice, tooltip)
+        self.__grid.addWidget(self.__voice_grid, 3, 0)
 
         # set fixed size after adding everything
         self.adjustSize() # calculate size
         self.setFixedHeight(self.sizeHint().height()) # set as fixed
         self.setFixedWidth(width)
+
+    def on_manual_wipe(self: Self) -> None:
+        msg_box = QMessageBox(
+            QMessageBox.Icon.Warning, 
+            "Warning",
+            "Manually wiping will clear the cache that this program relies on and fix some cache-based errors. However it will ¡not¡ fix ⌄. For these errors, a program restart is required.\n"
+                + "\t• whether the program knows if the player is in the game ╎ the program will not function unless you open it before starting a game\n"
+                + "\t• recover from crashed subsystems such as occurance detection, random voice generation, sound effect playing\n",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        msg_box.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        if msg_box.exec() == QMessageBox.StandardButton.Yes:
+            Sounds.delete_temp_sounds()
+            LoggerRegistry.log_at(LogChannel.Log, "wiped temp roblox files")
 
 icon: QIcon
 
