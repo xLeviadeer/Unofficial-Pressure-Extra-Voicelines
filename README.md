@@ -8,7 +8,7 @@ How do I Use it?
 1. **Download** the program from the [releases](../../releases) page and run the `.exe` file to open the program
 2. **Enable** any **modes** you'd like 
 3. **Open Pressure** and start playing
-    * you should here a message about the lobby test being successful when you open the game. If not, try using the manual wipe function and then re-opening Pressure
+    * you should hear a message about the lobby test being successful when you open the game. If not, try using the “manual wipe” button and then re-open Pressure
 
 How does it work? Is it dangerous?
 ---
@@ -16,9 +16,7 @@ This program works by checking for the existence of files in the Roblox's data. 
 
 Because this source of data is flakey, expect the program to sometimes malfunction. The program needs to track complex inferred states like whether the player is currently within a match. But it can only determine that by using indirect contextual information. This method is used to ensure the saftey of this program, but creates a compromise to accuracy.
 
-This program—fundamentally—cannot effect your gameplay directly, because it has no connection to Roblox itself. It is a cosmetic companion app designed for entertainment. 
-
-Supporting this Project
+This program—fundamentally—cannot affect your gameplay directly, because it has no connection to Roblox itself. It is a cosmetic companion app designed for entertainment. 
 
 What is added?
 ---
@@ -62,6 +60,7 @@ System messages are voiced by Charybdis and Joshua McDonagh.
 
 Voicelines for individuals who were commissioned are not included in the public repository. This is done to protect their voices from being used in AI training. Download and run the program from the [releases](../../releases) page to experience their voicelines.
 
+Supporting this Project
 --- 
 Supporting this project helps to cover development costs including the programming and voice acting expenses. If you'd like to support the project, voluntary donations help offset these expenses. Every contribution is greatly appreciated, but never expected. Thank you for helping make this project possible!
 
