@@ -26,7 +26,6 @@ import SoundInterface
 try: import Copier
 except: import Mock_Copier as Copier
 
-IDENTIFICATION_DEPTH = 1000 # used to be 12, but new sounds need WAY more
 NUMBER_OF_DELETION_ATTEMPTS_BEFORE_ERROR = 5
 
 # file copier event handler
@@ -42,18 +41,18 @@ class EventIdentifier(FileSystemEventHandler):
             # open with sound file
             with sf.SoundFile(file.get()) as soundFile:
                 # get the first few PCM frames
-                first_frames = soundFile.read(frames=IDENTIFICATION_DEPTH, dtype='int16')
+                first_frames = soundFile.read(frames=Sounds.IDENTIFICATION_DEPTH, dtype=Sounds.IDENTIFIER_TYPE)
 
                 # check if the frames match any identifier
                 for eventOption, eventId in ev.EVENT_SIGNATURES.items():
                     if (np.array_equal(
-                        np.array(eventId[:IDENTIFICATION_DEPTH]),
+                        np.array(eventId[:Sounds.IDENTIFICATION_DEPTH]),
                         first_frames
                     )): 
                         # run found method
                         EventIdentifier.on_found(file, eventOption)
         except (Exception):
-            Sounds.play_sound_default(SoundOptions.Error) # play error sound
+            Sounds.play_sound(SoundOptions.Error, do_stop=True) # play error sound
             Copier.dump_current() # create a dump
             Core.deinit() # close the logger so that all contents are written to it
 
@@ -88,9 +87,9 @@ class EventIdentifier(FileSystemEventHandler):
                 # a random sound is chosen from the category
                 # or, the default sound is played
 
-            # check if categoric association
-            if (event_option.value.associtation_is_categoric()): Sounds.play_sound_categoric_random(event_option.value.association) # play sound for category from random voice
-            else: Sounds.play_sound_default(event_option.value.association) # play default sound
+            # play sound
+            if event_option.value.association is None: raise ValueError(f"association was None when trying to play sound for {event_option.name}")
+            Sounds.play_sound(event_option.value.association) 
 
         # don't try to delete if
         if (
@@ -100,11 +99,13 @@ class EventIdentifier(FileSystemEventHandler):
 
         # run delete file
         LoggerRegistry.log_at(LogChannel.Log, "will attempt to delete this file")
-        threading.Thread(
-            target=EventIdentifier.delete_file,
-            args=(file, event_option),
-            daemon=True
-        ).start()
+        timer = threading.Timer(
+            event_option.value.deletion_settings.deletion_interval, # wait for the deletion iterval time before trying to delete
+            function=EventIdentifier.delete_file,
+            args=(file, event_option)
+        )
+        timer.daemon = True
+        timer.start()
 
     # set a timer and delete the found file so it must be re-downloaded again
     @staticmethod
@@ -135,4 +136,4 @@ class EventIdentifier(FileSystemEventHandler):
         else:
             # error alert
             LoggerRegistry.log_at(LogChannel.Warning, f"complete failiure when trying to delete {event_option.value.name} ({file_name}) ╎ as a result {event_option.value.name} may no longer be detectable")                
-            Sounds.play_sound_default(ev.ERROR_SOUNDS[event_option])
+            Sounds.play_sound(ev.ERROR_SOUNDS[event_option])
