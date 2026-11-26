@@ -43,7 +43,10 @@ Voicelines can occur during all of the following scenarios
 * special areas being reached
     * oxygen gardens
     * the dredge
+    * navi's room
 * the crystal being grabbed
+* a orb being created by a ghost
+* the player dying
 
 Characters & Credits
 ---
