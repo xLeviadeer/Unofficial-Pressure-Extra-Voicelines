@@ -2,7 +2,6 @@ from typing import (
     Self,
     Callable
 )
-from dataclasses import dataclass
 from enum import Enum, auto
 import time
 import random
