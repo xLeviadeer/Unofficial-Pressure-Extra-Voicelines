@@ -197,7 +197,7 @@ def _get_random_voice(with_category: CategoryOptions) -> VoiceOptions|df.Type.In
                     voices_left.remove(option) # remove from options
                     break # will continue outer
                 return option # return the option
-    raise df.Value.Invalid # returns when no enabled voice has a sound or when no voices are enabled
+    return  df.Value.Invalid # returns when no enabled voice has a sound or when no voices are enabled
 
 def stop_sound(sound: SoundKey) -> None:
     """stop a sound"""
