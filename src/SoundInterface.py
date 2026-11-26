@@ -307,15 +307,8 @@ def _rickety_splickety_mode() -> None:
                 if (
                     (not handler.do_rickety_mode)
                     or (not currently_in_game)
-                ):
-                    rabba_sound.stop()
-
-                # adjust volume live
-                if (rabba_sound.get_volume() != Sounds.volume_level):
-                    rabba_sound.set_volume(Sounds.volume_level)
-
-                # wait some time
-                time.sleep(0.2) 
+                ): channel.stop()
+                time.sleep(0.2) # wait some time
     timer = _timer((_RICKETY_SECONDS_MIN, _RICKETY_SECONDS_MAX), play_rabba_sound)
     threading.Thread(target=timer, daemon=True).start()
     LoggerRegistry.log_at(LogChannel.Log, "ran rickety splickety thread")
@@ -330,21 +323,15 @@ def _GIF_mode() -> None:
             (Sounds.voices[VoiceOptions.GIF].is_enabled) # rickety splickety mode enabled
             and (currently_in_game) # currently in the game
         ):
-            gif_random = Sounds.play_sound_categoric(VoiceOptions.GIF, CategoryOptions.Random)
-            while gif_random.get_busy(): # wait for sound to finish
+            gif_key = Sounds.play_sound(CategoryOptions.Random, VoiceOptions.GIF)
+            channel = Sounds.playing_sounds[gif_key]
+            while channel.get_busy(): # wait for sound to finish
                 # stop if unchecked mid playback
                 if (
-                    (not Sounds.voices[VoiceOptions.GIF].is_enabled)
+                    (not handler.do_rickety_mode)
                     or (not currently_in_game)
-                ):
-                    gif_random.stop()
-
-                # adjust volume live
-                if (gif_random.get_volume() != Sounds.volume_level):
-                    gif_random.set_volume(Sounds.volume_level)
-
-                # wait some time
-                time.sleep(0.2) 
+                ): channel.stop()
+                time.sleep(0.2) # wait some time
     timer = _timer((_RANDOM_TALKING_SECONDS_MIN, _RANDOM_TALKING_SECONDS_MAX), talk_something)
     threading.Thread(target=timer, daemon=True).start()
     LoggerRegistry.log_at(LogChannel.Log, "ran GIF thread")
