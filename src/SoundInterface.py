@@ -179,11 +179,13 @@ class ToggleGrid[T: Toggle](QWidget):
 class ModeTogglesGrid(ToggleGrid[ModeToggle]):
     def add_mode(self: Self, mode: ModeOptions, tooltip: str|df.Type.Empty = df.Value.Empty) -> None:
         mode_toggle = ModeToggle(mode)
+        if not df.Check.is_empty(tooltip): mode_toggle.setToolTip(tooltip)
         self.add_item(mode_toggle)
 
 class VoiceToggleGrid(ToggleGrid[VoiceToggle]): 
     def add_voice(self: Self, voice: VoiceOptions, tooltip: str|df.Type.Empty = df.Value.Empty) -> None:
         voice_toggle = VoiceToggle(voice)
+        if not df.Check.is_empty(tooltip): voice_toggle.setToolTip(tooltip)
         self.add_item(voice_toggle)
 
 class SoundInterface(QWidget):
