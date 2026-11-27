@@ -16,6 +16,9 @@ from Sounds import (
     SoundOptions, VoiceOptions, CategoryOptions
 )
 import ModeManager
+from ModeManager import (
+    ModeOptions
+)
 
 # deletion time class
 class DeletionTime:
@@ -298,6 +301,7 @@ def event_specifics(eventOption: EventOptions) -> bool:
                 # if GIF is enabled 
                 if (Sounds.voices[VoiceOptions.GIF].is_enabled):
                     Sounds.play_sound(VoiceOptions.GIF, CategoryOptions.Enragement3)
+                    ModeOptions.GIF.value.is_enabled = False
                     LoggerRegistry.log_at(LogChannel.Log, f"set the new value for {VoiceOptions.GIF.name} to {False}")
                     Sounds.voices[VoiceOptions.GIF].is_enabled = False
                     return False # early return
