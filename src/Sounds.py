@@ -5,11 +5,14 @@ from typing import (
 from enum import Enum
 import tempfile
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, KW_ONLY
 import threading
 import time
 from sys import exit
 import threading
+import soundfile as sf
+import numpy as np
+from scipy.signal import resample_poly
 
 import pygame as pg
 from xLPyBasics import Sentinels as df
@@ -29,36 +32,41 @@ IDENTIFICATION_DEPTH = 300
 IDENTIFIER_DEPTH = 300
 IDENTIFIER_TYPE: str = "int32"
 
+@dataclass(slots=True, frozen=True)
+class Sound:
+    name: str
+    _: KW_ONLY
+    gain: float = 0
+
 # default sounds options
 class SoundOptions(Enum):
     # ShuttingDown = "shutting_down"
-    Lobby = "lobby_enter"
-    Exit = "exit_game"
-    Test = "test_sound"
-    Error = "error"
-    AnglerError = "error_angler"
-    PinkieError = "error_pinkie"
-    EyefestationError = "error_eyefestation"
-    Rabba = "rabba_rabba"
+    Lobby = Sound("lobby_enter")
+    Exit = Sound("exit_game")
+    Test = Sound("test_sound")
+    Error = Sound("error", gain=5)
+    AnglerError = Sound("error_angler", gain=5)
+    PinkieError = Sound("error_pinkie", gain=5)
+    EyefestationError = Sound("error_eyefestation", gain=5)
+    Rabba = Sound("rabba_rabba", gain=3)
 
 @dataclass(frozen=True, slots=True)
-class VoiceOption:
-    name: str
+class VoiceOption(Sound):
     weight: int
+    _: KW_ONLY
     hidden: bool = False
 
 # voice options
 class VoiceOptions(Enum):
     Mayer = VoiceOption("Mayer", 2)
-    GIF = VoiceOption("GIF", 8, True)
-    Rabba = VoiceOption("Rabba", 2, True)
+    GIF = VoiceOption("GIF", 8, hidden=True, gain=10)
+    Rabba = VoiceOption("Rabba", 2, hidden=True, gain=10)
 
 VOICES_DISABLED_BY_DEFAULT = [
     VoiceOptions.Mayer,
     VoiceOptions.GIF,
     VoiceOptions.Rabba,
 ]
-
 # category options
 class CategoryOptions(Enum):
     Angler = "angler"
@@ -102,6 +110,32 @@ test_sound_locked = 0
 
 # ———METHODS———
 
+def read_apply_gain(path: Path, gain: float) -> pg.mixer.Sound:
+    audio, sample_rate = sf.read(path.get())
+
+    # resample if necessary
+    target_rate = pg.mixer.get_init()[0]
+    if sample_rate != target_rate:
+        from math import gcd
+        divisor = gcd(sample_rate, target_rate)
+        audio = resample_poly(
+            audio,
+            target_rate // divisor,
+            sample_rate // divisor,
+            axis=0
+        )
+
+    # convert mono to stereo if needed
+    if audio.ndim == 1: audio = np.column_stack((audio, audio))
+
+    # amplify
+    gain = 10 ** (gain / 20)
+    audio = np.clip(audio * gain, -1.0, 1.0)
+
+    # convert to 16-bit PCM
+    audio = (audio * 32767).astype(np.int16)
+    return pg.mixer.Sound(audio.tobytes())
+
 _was_inited: bool = False
 def init() -> None:
     global _was_inited
@@ -120,9 +154,9 @@ def init() -> None:
     # ║ defaults
     sounds = {}
     for sound_opt in SoundOptions:
-        curr_loc = PathHandler(SOUNDS_PATH.tempp(sound_opt.value, extension=SOUND_EXTENSION))
+        curr_loc = PathHandler(SOUNDS_PATH.tempp(sound_opt.value.name, extension=SOUND_EXTENSION))
         if curr_loc.exists_dir: continue
-        sounds[sound_opt] = pg.mixer.Sound(curr_loc.path.get())
+        sounds[sound_opt] = read_apply_gain(curr_loc.path, sound_opt.value.gain)
 
     # ║ voices
     voices = {}
@@ -148,7 +182,7 @@ def init() -> None:
                     curr_voice.categories[cat_opt] = []
 
                 # get sound
-                curr_voice.categories[cat_opt].append(pg.mixer.Sound(file.path.get()))
+                curr_voice.categories[cat_opt].append(read_apply_gain(file.path, voice_opt.value.gain))
 
     # ║ disable default voices
     for voice in VOICES_DISABLED_BY_DEFAULT: voices[voice].is_enabled = False
