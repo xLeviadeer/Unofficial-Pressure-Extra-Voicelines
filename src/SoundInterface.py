@@ -133,6 +133,9 @@ class ModeToggle(Toggle):
             and not df.Check.is_empty(self.__mode.value.linked_voice) 
         ): Sounds.play_sound(CategoryOptions.Startup, self.__mode.value.linked_voice)
 
+        # stop playing if toggled off
+        if state == False: Sounds.stop_sound((self.__mode.value.linked_voice, CategoryOptions.Startup))
+
 class VoiceToggle(Toggle):
     __voice: VoiceOptions
 

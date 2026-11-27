@@ -171,7 +171,7 @@ def _GIF_mode() -> None:
 
         # play sound effect
         if (
-            (ModeOptions.GIF.value.is_enabled) # rickety splickety mode enabled
+            (ModeOptions.GIF.value.is_enabled) # mode enabled
             and (currently_in_game) # currently in the game
         ):
             gif_key = Sounds.play_sound(CategoryOptions.Random, VoiceOptions.GIF)

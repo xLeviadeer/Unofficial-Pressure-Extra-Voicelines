@@ -246,6 +246,7 @@ def play_sound(
         # get voice & check if voice exists for the sound
         if df.Check.is_alls(use_voice): use_voice: VoiceOptions|df.Type.Invalid = _get_random_voice(sound)
         if df.Check.is_invalid(use_voice): return # no sound found, do nothing
+        if len(voices[use_voice].categories) == 0: return # do nothing if no categories exist
     
         # pick a random sound
         curr_sound_count = len(voices[use_voice].categories[sound])
