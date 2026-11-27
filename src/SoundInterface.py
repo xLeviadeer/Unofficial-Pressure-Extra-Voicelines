@@ -116,7 +116,6 @@ class ModeToggle(Toggle):
 
     def __on_state_changed(self: Self, state: bool) -> None:
         if self.is_toggled != state:
-            print(state)
             self._check_box.setChecked(state) # will set voice state also
 
     def _on_toggled(self: Self, state: bool) -> None:
