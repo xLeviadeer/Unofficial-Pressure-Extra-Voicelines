@@ -255,7 +255,7 @@ def event_specifics(eventOption: EventOptions) -> bool:
         case EventOptions.EyefestationMusic1:
             # signal that music played for 2 seconds
             eyefestation_music_recently_played = True # immediately change value
-            Core.sound_handler.print("+ set eyefesation music to trues")
+            LoggerRegistry.log_at(LogChannel.SettingChange, "set eyefesation music to trues")
             # change value back 2 seconds later
             thread2 = threading.Timer(2, reset_eyefestation_music_recently_played)
             thread2.daemon = True
