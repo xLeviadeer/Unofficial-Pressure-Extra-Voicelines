@@ -42,7 +42,7 @@ class VolumeSlider(QWidget):
         if not isinstance(starting_volume, int): raise TypeError("`starting_volume` must be an integer")
         if (
             (starting_volume < 0)
-            or (starting_volume > 100)
+            or (starting_volume > Sounds.SOUND_SCALE)
         ): raise ValueError(f"`starting_volume` cannot be less than 0 or greater than 100: {starting_volume}")
 
         self.__do_update_vol: bool = True
@@ -51,7 +51,7 @@ class VolumeSlider(QWidget):
         self.__label = QLabel()
         self.__box.addWidget(self.__label)
         self.__slider = QSlider(Qt.Orientation.Horizontal)
-        self.__slider.setRange(0, 100)
+        self.__slider.setRange(0, Sounds.SOUND_SCALE)
         self.__slider.valueChanged.connect(lambda vol: self.set_volume(vol, True))
         self.__slider.setValue(starting_volume) # will run `set_volume`
         self.__box.addWidget(self.__slider)
@@ -66,8 +66,8 @@ class VolumeSlider(QWidget):
         if not isinstance(vol, int): raise TypeError("`vol` must be an integer")
         if (
             (vol < 0)
-            or (vol > 100)
-        ): raise ValueError(f"`vol` cannot be less than 0 or greater than 100: {vol}")
+            or (vol > Sounds.SOUND_SCALE)
+        ): raise ValueError(f"`vol` cannot be less than 0 or greater than {Sounds.SOUND_SCALE}: {vol}")
 
         # check if volume setting is enabled
         if not self.__do_update_vol: return # do nothing
