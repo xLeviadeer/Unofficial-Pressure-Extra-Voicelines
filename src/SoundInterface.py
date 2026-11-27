@@ -131,7 +131,7 @@ class ModeToggle(Toggle):
         if (
             (state == True)
             and not df.Check.is_empty(self.__mode.value.linked_voice) 
-        ): Sounds.play_sound(CategoryOptions.Enter, self.__mode.value.linked_voice)
+        ): Sounds.play_sound(CategoryOptions.Startup, self.__mode.value.linked_voice)
 
 class VoiceToggle(Toggle):
     __voice: VoiceOptions
@@ -208,6 +208,7 @@ class SoundInterface(QWidget):
         # tooltips
         tooltips: dict[VoiceOptions|ModeOptions, str] = {
             ModeOptions.GIF: "voiced by xLeviadeer",
+            ModeOptions.Rabba: "voiced by xLeviadeer",
         }
 
         # self window settings

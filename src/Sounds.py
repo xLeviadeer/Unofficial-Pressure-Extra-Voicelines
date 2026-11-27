@@ -51,10 +51,12 @@ class VoiceOption:
 class VoiceOptions(Enum):
     Mayer = VoiceOption("Mayer", 2)
     GIF = VoiceOption("GIF", 8, True)
+    Rabba = VoiceOption("Rabba", 2, True)
 
 VOICES_DISABLED_BY_DEFAULT = [
     VoiceOptions.Mayer,
     VoiceOptions.GIF,
+    VoiceOptions.Rabba,
 ]
 
 # category options

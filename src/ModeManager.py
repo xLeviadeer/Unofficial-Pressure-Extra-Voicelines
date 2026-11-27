@@ -66,7 +66,7 @@ class Mode:
         self.__linked_voice = linked_voice
         
 class ModeOptions(Enum): 
-    Rickety = Mode("Ricket Splickety", False)
+    Rabba = Mode("Ricket Splickety", False, VoiceOptions.Rabba)
     GIF = Mode("Green Friend", False, VoiceOptions.GIF)
 
 _was_inited: bool = False
@@ -148,7 +148,7 @@ def _rickety_splickety_mode() -> None:
 
         # play sound effect
         if (
-            (ModeOptions.Rickety.value.is_enabled) # rickety splickety mode enabled
+            (ModeOptions.Rabba.value.is_enabled) # rickety splickety mode enabled
             and (currently_in_game) # currently in the game
         ):
             Sounds.play_sound(SoundOptions.Rabba)
@@ -156,7 +156,7 @@ def _rickety_splickety_mode() -> None:
             while channel.get_busy(): # wait for sound to finish
                 # stop if unchecked mid playback
                 if (
-                    (not ModeOptions.Rickety.value.is_enabled)
+                    (not ModeOptions.Rabba.value.is_enabled)
                     or (not currently_in_game)
                 ): channel.stop()
                 time.sleep(0.2) # wait some time
