@@ -76,6 +76,7 @@ class CategoryOptions(Enum):
     NaviRoom = "navi"
     Ghost = "ghost"
     Death = "death"
+    Startup = "startup"
     Random = "random"
 
 # voice storage for sounds
