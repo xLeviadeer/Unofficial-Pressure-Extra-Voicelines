@@ -30,6 +30,7 @@ except: import Mock_Copier as Copier
 
 # run modes
     Identifier = auto(),
+    Gains = auto()
 def _startIdentifier() -> None:
     # create observer, and shedule it to watch for changes
     observer = Observer()
@@ -73,6 +74,9 @@ def launch(mode: Mode) -> None:
 
             # stop 
             thread.join()
+
+        case Mode.Gains: 
+            Copier.apply_gains()
 
         case _: 
             raise ValueError("mode was not a valid mode")
