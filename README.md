@@ -58,7 +58,7 @@ The addon has several "characters" with different voices that talk to you over t
 
 System messages are voiced by Charybdis and Joshua McDonagh.
 
-Voicelines for individuals who were commissioned are not included in the public repository. This is done to protect their voices from being used in AI training. Download and run the program from the [releases](../../releases) page to experience their voicelines.
+Voicelines audio files are not included in the public repository contents. This is done to protect voices from being used in AI training. Download and run the program from the [releases](../../releases) page to experience voicelines, or provide voiceline files manually under `assets/sounds`.
 
 Supporting this Project
 --- 
