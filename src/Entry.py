@@ -29,7 +29,8 @@ try: import Copier
 except: import Mock_Copier as Copier
 
 # run modes
-    Identifier = auto(),
+class Mode(Enum):
+    Identifier = auto()
     Gains = auto()
 def _startIdentifier() -> None:
     # create observer, and shedule it to watch for changes
